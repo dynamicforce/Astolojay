@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>梅花易数 ASTROLOJAY</title>
+    <style>
+        body { font-family: 'Microsoft YaHei', sans-serif; background-color: #121214; color: #e0e0e6; padding: 20px; }
+        .container { max-width: 650px; margin: 0 auto; background: #1e1e22; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); border: 1px solid #2d2d35; }
+        
+        h2 { text-align: center; color: #ffffff; margin-bottom: 25px; letter-spacing: 1px; }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 8px; color: #aaa; }
+        
+        .form-group input { width: 100%; padding: 12px; background-color: #2a2a30; border: 1px solid #444; border-radius: 6px; font-size: 18px; color: #fff; box-sizing: border-box; text-align: center; letter-spacing: 2px; }
+        .form-group input:focus { border-color: #1e3a8a; outline: none; }
+        
+        button { width: 100%; padding: 12px; background-color: #cc2424; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+        button:hover { background-color: #b31e1e; }
+        
+        /* 新增：动爻提示栏样式 */
+        .dongyao-bar { margin-top: 20px; background: #2b1717; border: 1px solid #7a1d1d; color: #ffcccc; padding: 12px; border-radius: 6px; text-align: center; font-weight: bold; font-size: 16px; display: none; }
+        
+        .result-box { margin-top: 25px; padding-top: 15px; border-top: 2px dashed #444; display: none; }
+        .section { margin-bottom: 20px; padding: 10px; border-radius: 4px; }
+        .section-title { font-weight: bold; color: #ff8000; margin-bottom: 12px; border-left: 4px solid #ff8000; padding-left: 8px; }
+        
+        .tiyong-table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; text-align: center; }
+        .tiyong-table th { background-color: #1e3a8a; color: white; padding: 10px; font-size: 15px; }
+        .tiyong-table td { border: 1px solid #3a3a42; padding: 12px; font-size: 16px; font-weight: bold; background-color: #1e1e22; }
+        
+        /* 体卦行暗朱红高亮 */
+        .ti-row td { background-color: #3d1a1a; color: #ff6666; }
+        .tiyong-table td.label-cell { background-color: #25252b; color: #bbb; font-size: 15px; width: 12%; }
+        .ti-row td.label-cell { background-color: #522020; color: #ff9999; font-weight: bold; }
+        
+        .tiyong-table tr.result-row td { font-size: 14px; background-color: #222226; font-weight: bold; }
+        
+        /* 象意看板暗黑风格 */
+        .summary-box { background-color: #25252b; border: 1px solid #3a3a42; padding: 15px; border-radius: 6px; }
+        .xiang-item { margin-top: 10px; padding: 12px; background: #1e1e22; border-radius: 4px; border-left: 3px solid #cc2424; font-size: 14px; line-height: 1.6; }
+        .xiang-item b { color: #ff6666; font-size: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>☯ 梅花易数 ASTROLOJAY ☯</h2>
+    
+    <div class="form-group">
+        <label for="numberInput">请输入号码或数字：</label>
+        <input type="text" id="numberInput" placeholder="例如：9 或 01111116402" value="9">
+    </div>
+
+    <button onclick="calculateNumberGua()">起卦</button>
+
+    <!-- 新增：动爻提示栏占位 -->
+    <div id="dongyaoBar" class="dongyao-bar"></div>
+
+    <div id="resultBox" class="result-box">
+        <!-- 看板表格 -->
+        <div class="section">
+            <div class="section-title">【体用生克总览看板】</div>
+            <table class="tiyong-table">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>主卦</th>
+                        <th>互卦</th>
+                        <th>之卦</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="ti-row">
+                        <td class="label-cell">体</td>
+                        <td id="tableMainTi"></td>
+                        <td id="tableHuTi"></td>
+                        <td id="tableZhiTi"></td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">用</td>
+                        <td id="tableMainYong"></td>
+                        <td id="tableHuYong"></td>
+                        <td id="tableZhiYong"></td>
+                    </tr>
+                    <tr class="result-row">
+                        <td class="label-cell" style="color:#ff8000;">生克</td>
+                        <td id="tableMainRes"></td>
+                        <td id="tableHuRes"></td>
+                        <td id="tableZhiRes"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 纯卦象核心象意罗列区 -->
+        <div class="section summary-box">
+            <div class="section-title" style="border-left-color: #2ecc71; color: #2ecc71;">【全盘核心卦象象意速查】</div>
+            <div id="xiangContent"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+const BAGUA_NAME = {1: "乾", 2: "兑", 3: "离", 4: "震", 5: "巽", 6: "坎", 7: "艮", 8: "坤"};
+const BAGUA_ELEMENT = {1: "金", 2: "金", 3: "火", 4: "木", 5: "木", 6: "水", 7: "土", 8: "土"};
+const BAGUA_SYMBOL = {1: "☰", 2: "☱", 3: "☲", 4: "☳", 5: "☴", 6: "☵", 7: "☶", 8: "☷"};
+const BAGUA_FULL_ATTR = {
+    1: "阳金", 2: "阴金", 3: "阴火", 4: "阳木",
+    5: "阴木", 6: "阳水", 7: "阳土", 8: "阴土"
+};
+
+// 深度丰富版万物象意数据库
+const BAGUA_DICT = {
+    1: { name: "乾", num: "1号", element: "阳金", pos: "西北方", mean: "为天。代表刚健、圆满、权力、尊贵、高档、大城市、奢侈、金钱、圆环形物。", person: "父亲、领导、长官、一把手、核心大客户", body: "头部、骨骼、大肠、肺部", color: "白色、金色、高亮色" },
+    2: { name: "兑", num: "2号", element: "阴金", pos: "正西方", mean: "为泽。代表喜悦、口舌、雄辩、饮食、带有缺口的器物、破损、法律、乐器、金融。", person: "少女、小女儿、教师、律师、销售、演艺人员", body: "口、舌、牙齿、咽喉、呼吸道", color: "白色、浅亮色" },
+    3: { name: "离", num: "3号", element: "阴火", pos: "正南方", mean: "为火。代表光明、美丽、文饰、虚荣、网络、电子、电磁、文书合同、中空物、名气。", person: "中女、二女儿、文人、美发美容师、互联网从业者", body: "眼睛、心脏、血液、小肠", color: "红色、赤色、紫色" },
+    4: { name: "震", num: "4号", element: "阳木", pos: "正东方", mean: "为雷。代表雷动、快速、突发、震动、车辆、飞机、森林、果断、惊吓、声名大振。", person: "长子、大儿子、行政指挥官、司机、运动员、雷厉风行之人", body: "足部、肝脏、神经系统、头发", color: "青色、绿色" },
+    5: { name: "巽", num: "5号", element: "阴木", pos: "东南方", mean: "为风。代表快速、不稳、飘散、顺从、长直物、管道、木材、商业、虚浮、气味、流动性强。", person: "长女、大女儿、文职人员、商人、导游、自由职业者", body: "股部、胆囊、呼吸器官、风疾感冒", color: "青色、绿色、洁净色" },
+    6: { name: "坎", num: "6号", element: "阳水", pos: "正北方", mean: "为水。代表陷入、危险、暗昧、隐私、液体、财富（水主财）、隐瞒、盗贼、流动、陷阱、智慧。", person: "中男、二儿子、江湖之人、水手、思想家、涉险之人", body: "肾脏、耳部、泌尿系统、生殖系统", color: "黑色、深蓝色" },
+    7: { name: "艮", num: "7号", element: "阳土", pos: "东北方", mean: "为山。代表停止、稳重、山岳、房屋、门位、石头、阻碍、沉重、保守、固体、安定。", person: "少男、小儿子、守门人、保镖、地产商、笃实稳重之人", body: "手部、脾胃、鼻子、背部", color: "黄色、棕色、咖啡色" },
+    8: { name: "坤", num: "8号", element: "阴土", pos: "西南方", mean: "为地。代表柔顺、包容、大地、广大、方形物、大众、平民、吝啬、文书衣服、沉闷、承载力强。", person: "母亲、老妇人、大众、助手、后勤管理、土地相关人员", body: "腹部、脾胃、肉体、消化系统", color: "黄色、黑色" }
+};
+
+const BAGUA_DIALECT = {
+    "111": 1, "110": 2, "101": 3, "100": 4,
+    "011": 5, "010": 6, "001": 7, "000": 8
+};
+
+const BAGUA_FROM_NUM = {
+    1: [1, 1, 1], 2: [1, 1, 0], 3: [1, 0, 1], 4: [1, 0, 0],
+    5: [0, 1, 1], 6: [0, 1, 0], 7: [0, 0, 1], 8: [0, 0, 0]
+};
+
+function getGuaNum(yaoList) {
+    let key = yaoList.join("");
+    return BAGUA_DIALECT[key] || 8;
+}
+
+function checkShisheng(tiEle, yongEle) {
+    if (tiEle === yongEle) return "同我 (比和)";
+    const relations = {
+        "金水": "我生 (泄气)", "水木": "我生 (泄气)", "木火": "我生 (泄气)", "火土": "我生 (泄气)", "土金": "我生 (泄气)",
+        "水金": "生我 (大吉)", "木水": "生我 (大吉)", "火木": "生我 (大吉)", "土火": "生我 (大吉)", "金土": "生我 (大吉)",
+        "金木": "我克 (小吉)", "木土": "我克 (小吉)", "土水": "我克 (小吉)", "水火": "我克 (小吉)", "火金": "我克 (小吉)",
+        "木金": "克我 (大凶)", "土木": "克我 (大凶)", "水土": "克我 (大凶)", "火水": "克我 (大凶)", "金火": "克我 (大凶)"
+    };
+    return relations[tiEle + yongEle] || "未知";
+}
+
+function getStatusColor(relation) {
+    if (relation.includes("生我") || relation.includes("同我")) return "#2ecc71";
+    if (relation.includes("我克")) return "#3498db";
+    if (relation.includes("我生")) return "#f39c12";
+    if (relation.includes("克我")) return "#ff4d4d";
+    return "#eee";
+}
+
+function formatGuaCell(num) {
+    return `<span style="font-size:20px; vertical-align:middle;">${BAGUA_SYMBOL[num]}</span> ${BAGUA_NAME[num]} (${BAGUA_FULL_ATTR[num]})`;
+}
+
+function makeXiangHtml(title, num) {
+    const d = BAGUA_DICT[num];
+    return `
+        <div class="xiang-item">
+            <b>【${title} · ${BAGUA_SYMBOL[num]} ${d.name}卦】</b> (${d.num} | 五行:${d.element})<br>
+            ● <b>核心方位</b>：${d.pos} &nbsp;&nbsp; | &nbsp;&nbsp; <b>代表颜色</b>：${d.color}<br>
+            ● <b>自然与核心意象</b>：${d.mean}<br>
+            ● <b>对应人物</b>：${d.person} &nbsp;&nbsp; | &nbsp;&nbsp; <b>对应身体</b>：${d.body}
+        </div>
+    `;
+}
+
+function calculateNumberGua() {
+    const rawInput = document.getElementById('numberInput').value;
+    let rawNums = rawInput.replace(/\D/g, '').split('').map(Number);
+    
+    if (rawNums.length < 1) {
+        alert("请输入至少1位数字！");
+        return;
+    }
+
+    const nums = rawNums.map(n => n === 0 ? 8 : n);
+    let upNum, downNum, moveYao;
+
+    if (nums.length === 1) {
+        let singleNum = nums[0];
+        upNum = singleNum % 8; if (upNum === 0) upNum = 8;
+        downNum = upNum;
+        moveYao = singleNum % 6; if (moveYao === 0) moveYao = 6;
+    } else {
+        const mid = Math.floor(nums.length / 2);
+        const frontPart = nums.slice(0, mid);
+        const backPart = nums.slice(mid);
+        const frontSum = frontPart.reduce((a, b) => a + b, 0);
+        const backSum = backPart.reduce((a, b) => a + b, 0);
+        const totalSum = frontSum + backSum;
+
+        upNum = frontSum % 8; if (upNum === 0) upNum = 8;
+        downNum = backSum % 8; if (downNum === 0) downNum = 8;
+        moveYao = totalSum % 6; if (moveYao === 0) moveYao = 6;
+    }
+
+    // --- 新增：渲染动爻提示 ---
+    const dBar = document.getElementById('dongyaoBar');
+    dBar.style.display = 'block';
+    const yaoText = moveYao <= 3 ? '内卦动 · 内部/主观/切近' : '外卦动 · 外部/客观/环境';
+    dBar.innerHTML = `动爻：第 <span style="color:#ff6666; font-size:18px;">${moveYao}</span> 爻变 &nbsp; <span style="font-size:14px; color:#aaa;">(${yaoText})</span>`;
+
+    const downYao = BAGUA_FROM_NUM[downNum];
+    const upYao = BAGUA_FROM_NUM[upNum];
+    const benYao = {
+        1: downYao[0], 2: downYao[1], 3: downYao[2],
+        4: upYao[0],  5: upYao[1],  6: upYao[2]
+    };
+
+    const isUpMoved = moveYao > 3;
+    const tiNum = isUpMoved ? downNum : upNum;
+    const yongNum = isUpMoved ? upNum : downNum;
+    const mainRel = checkShisheng(BAGUA_ELEMENT[tiNum], BAGUA_ELEMENT[yongNum]);
+
+    // 互卦
+    const huDownNum = getGuaNum([benYao[2], benYao[3], benYao[4]]);
+    const huUpNum = getGuaNum([benYao[3], benYao[4], benYao[5]]);
+    const huTiNum = isUpMoved ? huDownNum : huUpNum;
+    const huYongNum = isUpMoved ? huUpNum : huDownNum;
+    const huRel = checkShisheng(BAGUA_ELEMENT[huTiNum], BAGUA_ELEMENT[huYongNum]);
+
+    // 之卦
+    const zhiYao = {...benYao};
+    zhiYao[moveYao] = zhiYao[moveYao] === 1 ? 0 : 1;
+    const zhiDownNum = getGuaNum([zhiYao[1], zhiYao[2], zhiYao[3]]);
+    const zhiUpNum = getGuaNum([zhiYao[4], zhiYao[5], zhiYao[6]]);
+    const zhiTiNum = isUpMoved ? zhiDownNum : zhiUpNum;
+    const zhiYongNum = isUpMoved ? zhiUpNum : zhiDownNum;
+    const zhiRel = checkShisheng(BAGUA_ELEMENT[zhiTiNum], BAGUA_ELEMENT[zhiYongNum]);
+
+    // 填充看板表
+    document.getElementById('tableMainTi').innerHTML = formatGuaCell(tiNum);
+    document.getElementById('tableMainYong').innerHTML = formatGuaCell(yongNum);
+    document.getElementById('tableMainRes').innerHTML = `<span style="color:${getStatusColor(mainRel)}">${mainRel}</span>`;
+    
+    document.getElementById('tableHuTi').innerHTML = formatGuaCell(huTiNum);
+    document.getElementById('tableHuYong').innerHTML = formatGuaCell(huYongNum);
+    document.getElementById('tableHuRes').innerHTML = `<span style="color:${getStatusColor(huRel)}">${huRel}</span>`;
+    
+    document.getElementById('tableZhiTi').innerHTML = formatGuaCell(zhiTiNum);
+    document.getElementById('tableZhiYong').innerHTML = formatGuaCell(zhiYongNum);
+    document.getElementById('tableZhiRes').innerHTML = `<span style="color:${getStatusColor(zhiRel)}">${zhiRel}</span>`;
+
+    // 动态罗列盘面出现的纯卦象意
+    let html = "";
+    html += makeXiangHtml("主卦-体卦", tiNum);
+    html += makeXiangHtml("主卦-用卦", yongNum);
+    
+    if(huTiNum !== tiNum && huTiNum !== yongNum) html += makeXiangHtml("互卦-体卦", huTiNum);
+    if(huYongNum !== tiNum && huYongNum !== yongNum && huYongNum !== huTiNum) html += makeXiangHtml("互卦-用卦", huYongNum);
+    
+    if(zhiTiNum !== tiNum && zhiTiNum !== yongNum && zhiTiNum !== huTiNum && zhiTiNum !== huYongNum) html += makeXiangHtml("之卦-体卦", zhiTiNum);
+    if(zhiYongNum !== tiNum && zhiYongNum !== yongNum && zhiYongNum !== huTiNum && zhiYongNum !== huYongNum && zhiYongNum !== zhiTiNum) html += makeXiangHtml("之卦-用卦", zhiYongNum);
+
+    document.getElementById('xiangContent').innerHTML = html;
+    document.getElementById('resultBox').style.display = 'block';
+}
+</script>
+</body>
+</html>
