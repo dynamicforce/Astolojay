@@ -50,7 +50,8 @@
     
     <div class="form-group">
         <label for="numberInput">请输入号码或数字：</label>
-        <input type="text" id="numberInput" placeholder="例如：9 或 01111116402" value="9">
+        <!-- 移除了原有的默认值 value="9"，并将 placeholder 修改为要求的内容 -->
+        <input type="text" id="numberInput" placeholder="输入任何号码">
     </div>
 
     <button onclick="calculateNumberGua()">起卦</button>
